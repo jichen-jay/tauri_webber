@@ -1,0 +1,16 @@
+{
+  "name": "js_scraper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jaykchen@icloud.com",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "jsdom": "^25.0.1",
+    "playwright": "^1.49.1"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "module": "ESNext",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "checkJs": true,
+    "baseUrl": "./",
+    "paths": {
+      "$lib/*": ["src/lib/*"],
+      "@tauri-apps/*": ["node_modules/@tauri-apps/*"],
+      "svelte/*": ["node_modules/svelte/*"]
+    }
+  },
+  "typeRoots": ["./node_modules/@types"],
+  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.svelte"]
+}

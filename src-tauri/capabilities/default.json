@@ -1,0 +1,55 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "enables the default permissions",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "store:default",
+    "store:allow-load",
+    "store:allow-save",
+    "store:allow-set",
+    "fs:default",
+    {
+      "identifier": "fs:allow-write",
+      "allow": [
+        {
+          "path": "$APPCONFIG/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        {
+          "path": "$APPCONFIG/*"
+        }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://ark.cn-beijing.volces.com/api/v3/*"
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "exec-sh",
+          "cmd": "node",
+          "args": [
+            "./backend/src/index.js", 
+            {
+              "validator": "^.+$"
+            }
+          ],
+          "sidecar": false
+        }
+      ]
+    }
+  ]
+}
