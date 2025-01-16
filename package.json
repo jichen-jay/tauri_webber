@@ -17,6 +17,7 @@
     "@tauri-apps/plugin-http": "^2.2.0",
     "@tauri-apps/plugin-shell": "^2.2.0",
     "@tauri-apps/plugin-store": "^2.2.0",
+    "dompurify": "^3.2.3",
     "svelte": "^5.15.0",
     "svelte-exmarkdown": "^3.0.3",
     "tailwind-merge": "^2.2.1"

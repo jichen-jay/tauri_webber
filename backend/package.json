@@ -10,6 +10,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "dompurify": "^3.2.3",
+    "isomorphic-dompurify": "^2.20.0",
     "jsdom": "^25.0.1",
     "playwright": "^1.49.1"
   }
