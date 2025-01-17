@@ -1,4 +1,4 @@
-const styleTag = document.createElement('style');
+const styleTag = document.createElement('style')
 styleTag.textContent = `
   #modelToggleButton {
     padding: 10px;
@@ -14,52 +14,125 @@ styleTag.textContent = `
   #modelToggleButton:hover {
     background-color: #0056b3; /* Darker blue on hover */
   }
-`;
-document.head.appendChild(styleTag);
+`
+document.head.appendChild(styleTag)
 
-const toggleButton = document.createElement('button');
-toggleButton.id = 'modelToggleButton';
-toggleButton.textContent = 'Switch to o1'; // Initial label
+const toggleButton = document.createElement('button')
+toggleButton.id = 'modelToggleButton'
+toggleButton.textContent = 'Loading...' // Initial loading state
 
-const sidebarContainer = document.querySelector('.sticky.top-0.flex.h-full.min-h-0.flex-1.flex-col.pt-md');
+const sidebarContainer = document.querySelector(
+  '.sticky.top-0.flex.h-full.min-h-0.flex-1.flex-col.pt-md'
+)
 if (sidebarContainer) {
-  console.log('Sidebar container found:', sidebarContainer);
-
-  const middleIndex = Math.floor(sidebarContainer.children.length / 2);
-  sidebarContainer.insertBefore(toggleButton, sidebarContainer.children[middleIndex]);
+  console.log('Sidebar container found:', sidebarContainer)
+  const middleIndex = Math.floor(sidebarContainer.children.length / 2)
+  sidebarContainer.insertBefore(
+    toggleButton,
+    sidebarContainer.children[middleIndex]
+  )
 } else {
-  console.error('Sidebar container not found!');
+  console.error('Sidebar container not found!')
 }
 
-let currentModel = 'GPT-4o';
+let currentModel = ''
 
-toggleButton.addEventListener('click', () => {
-  const newModel = currentModel === 'GPT-4o' ? 'o1' : 'GPT-4o';
-
-  fetch('/rest/user/save-settings?version=2.15&source=default', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      updated_settings: {
-        model: newModel,
-        version: '2.15',
-        source: 'default'
+async function checkCurrentModel () {
+  try {
+    const response = await fetch('/rest/user/settings?version=2.15', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    }),
-  })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(err => {
-          throw new Error(`Failed to switch model: ${err.message || 'Unknown error'}`);
-        });
-      }
-      console.log(`Model switched to ${newModel} successfully.`);
-      currentModel = newModel;
-      toggleButton.textContent = `Switch to ${currentModel === 'GPT-4o' ? 'o1' : 'GPT-4o'}`;
     })
-    .catch(error => {
-      console.error('Error:', error.message);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data?.default_model || 'gpt4o'
+  } catch (error) {
+    console.error('Error fetching model state:', error)
+    return 'gpt4o'
+  }
+}
+
+function updateButtonText (model) {
+  const targetModel = model === 'o1' ? 'gpt4o' : 'o1'
+  toggleButton.textContent = `Switch to ${targetModel}`
+}
+
+async function initializeButton () {
+  currentModel = await checkCurrentModel()
+  console.log('Current model:', currentModel)
+  updateButtonText(currentModel)
+
+  toggleButton.addEventListener('click', async () => {
+    const newModel = currentModel === 'o1' ? 'gpt4o' : 'o1'
+
+    try {
+      const response = await fetch(
+        '/rest/user/save-settings?version=2.15&source=default',
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            updated_settings: {
+              model: newModel,
+              version: '2.15',
+              source: 'default'
+            }
+          })
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to switch model')
+      }
+
+      currentModel = newModel
+      updateButtonText(currentModel)
+    } catch (error) {
+      console.error('Error:', error.message)
+    }
+  })
+}
+
+initializeButton()
+
+let pollingInterval = null;
+
+function startPolling() {
+    checkCurrentModel().then(model => {
+        currentModel = model;
+        updateButtonText(model);
     });
+
+    pollingInterval = setInterval(async () => {
+        const latestModel = await checkCurrentModel();
+        if (latestModel !== currentModel) {
+            currentModel = latestModel;
+            updateButtonText(latestModel);
+        }
+    }, 5000);
+}
+
+function stopPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
+toggleButton.addEventListener('mouseenter', () => {
+    if (!pollingInterval) {
+        startPolling();
+    }
+});
+
+toggleButton.addEventListener('mouseleave', () => {
+    stopPolling();
 });
