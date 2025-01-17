@@ -1,6 +1,9 @@
 import { chromium } from 'playwright'
 import DOMPurify from 'isomorphic-dompurify'
 import TurndownService from 'turndown'
+import path from 'path'
+import os from 'os'
+import  express from 'express';
 
 const turndownService = new TurndownService({
   headingStyle: 'atx', // Use ATX-style headings (e.g., # Heading)
@@ -102,10 +105,14 @@ const url = process.argv[2]
 
 async function initializeBrowser () {
   try {
-    var agent =
+    const userDataDir = path
+      .join(os.homedir(), '.config', 'google-chrome')
+      .toString()
+    const agent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    browser = await chromium.launch({
-      executablePath: '/run/current-system/sw/bin/chromium',
+    browser = await chromium.launchPersistentContext(userDataDir, {
+      executablePath:
+        '/etc/profiles/per-user/jaykchen/bin/google-chrome-stable',
       headless: false,
       args: [
         '--no-sandbox',
@@ -215,14 +222,34 @@ async function openOneTab (targetUrl) {
 }
 
 ;(async () => {
-  await initializeBrowser() // Initialize the browser
-  const result = await openOneTab(url) // Open the tab and get the content
+  await initializeBrowser() 
+  
+  const app = express();
+  const PORT = 5000;
+  
+  app.get('/', async (req, res) => {
+    const targetUrl = req.query.url;
+    
+    if (!targetUrl) {
+      return res.status(400).send('Error: Missing "url" query parameter.');
+    }
 
-  if (result) {
-    console.log(result)
-  } else {
-    console.log('Failed to extract the article.')
-  }
+    try {
+      const result = await openOneTab(targetUrl); // Open the tab and get the content
+      res.send(result); // Send back the scraped content as response
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Error scraping the webpage.');
+    }
+  });
 
-  await browser.close()
-})()
+  app.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}`);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('\nClosing browser...');
+    await browser.close();
+    process.exit(0);
+  });
+})();

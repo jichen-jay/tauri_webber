@@ -1,17 +1,27 @@
 DOMPurify script injected.
 Attempted to remove popups and overlays.
-Financial Times      
+Financial Times    
 
 [Accessibility help](https://www.ft.com/accessibility)[Skip to navigation](#site-navigation)[Skip to content](#site-content)[Skip to footer](#site-footer)
 
 -   [S&P 500 Minus −0.21%](https://markets.ft.com/data/indices/tearsheet/summary?s=INX:IOM)
--   [Shanghai Minus −0.42%](https://markets.ft.com/data/indices/tearsheet/summary?s=SHI:SHH)
+-   [Shanghai Minus −0.02%](https://markets.ft.com/data/indices/tearsheet/summary?s=SHI:SHH)
 -   [FTSE 100+1.09%](https://markets.ft.com/data/indices/tearsheet/summary?s=FTSE:FSI)
--   [Euro/Dollar+0.03%](https://markets.ft.com/data/equities/tearsheet/summary?s=EURUSD)
--   [Brent Crude Oil+0.26%](https://markets.ft.com/data/equities/tearsheet/summary?s=IB.1:IEU)
+-   [Euro/Dollar+0.09%](https://markets.ft.com/data/equities/tearsheet/summary?s=EURUSD)
+-   [Brent Crude Oil+0.37%](https://markets.ft.com/data/equities/tearsheet/summary?s=IB.1:IEU)
 -   [10 Year US Gov Minus −2.91%](https://markets.ft.com/data/indices/tearsheet/summary?s=JPMUS10YCMY:REU)
 
 [Visit Markets Data](https://markets.ft.com/data)
+
+# Unbiased journalism
+
+Navigate the most important global events with clarity and confidence. Subscribe today - limited-time offers available now
+
+# Unbiased journalism
+
+Navigate the most important global events with clarity and confidence. Subscribe today - limited-time offers available now
+
+[Explore offers](https://subs.ft.com/viewsubscriptions?segmentID=6155f81d-41e7-6d21-222c-fa1065b6bdd2)
 
 -   [Sign In](/login?location=/)
 -   [Subscribe](/products?segmentId=f860e6c2-18af-ab30-cd5e-6e3a456f9265)
@@ -274,11 +284,11 @@ Editor's Picks
 
 ## TOP STORIES
 
-[China economy live: 2024 GDP forecast to hit ‘around 5%’ target](/content/45c3f4ee-2825-45f3-aa4f-1d3615d06e3e)
+[China economy live: GDP rose 5% in 2024](/content/45c3f4ee-2825-45f3-aa4f-1d3615d06e3e)
 
 [FT live news](https://www.ft.com/ft-live-news)
 
-[China economy live: 2024 GDP forecast to hit ‘around 5%’ target](/content/45c3f4ee-2825-45f3-aa4f-1d3615d06e3e)
+[China economy live: GDP rose 5% in 2024](/content/45c3f4ee-2825-45f3-aa4f-1d3615d06e3e)
 
 Live
 
