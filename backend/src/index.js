@@ -1,5 +1,70 @@
 import { chromium } from "playwright";
 import DOMPurify from "isomorphic-dompurify";
+import TurndownService from "turndown";
+
+
+const turndownService = new TurndownService({
+  headingStyle: "atx", // Use ATX-style headings (e.g., # Heading)
+  bulletListMarker: "-", // Use '-' for unordered lists
+  codeBlockStyle: "fenced", // Use fenced code blocks (```
+  emDelimiter: "*", // Use '*' for emphasis
+  strongDelimiter: "**", // Use '**' for bold text
+});
+
+// Add custom rule to handle strikethrough
+// turndownService.addRule("strikethrough", {
+//   filter: ["path", "meta", "picture", "svg"],
+//   replacement: function (content) {
+//     return ""; // Remove these elements entirely
+//   },
+// });
+
+// Add a rule to remove <script>, <style>, and other boilerplate tags
+turndownService.addRule("boilerplate", {
+  filter: ["script", "style", "noscript", "iframe"],
+  replacement: function () {
+    return ""; // Skip these elements
+  },
+});
+
+// Add a rule for images to simplify <img> tags into Markdown format
+turndownService.addRule("imageSimplify", {
+  filter: "img",
+  replacement: function (content, node) {
+    const alt = node.getAttribute("alt") || "";
+    const src = node.getAttribute("src") || "";
+    return `${alt}`;
+  },
+});
+
+// Add a rule for links to ensure proper formatting
+turndownService.addRule("linkSimplify", {
+  filter: "a",
+  replacement: function (content, node) {
+    const href = node.getAttribute("href") || "";
+    return `[${content}](${href})`;
+  },
+});
+
+// Add a rule to handle blockquotes properly
+turndownService.addRule("blockquote", {
+  filter: "blockquote",
+  replacement: function (content) {
+    return content
+      .split("\n")
+      .map((line) => `> ${line}`)
+      .join("\n");
+  },
+});
+
+// Add a rule for tables if needed
+turndownService.addRule("tableSimplify", {
+  filter: ["table"],
+  replacement: function (content, node) {
+    // Simplify table rendering logic here if necessary.
+    return content; // Placeholder - extend as needed.
+  },
+});
 
 let browser;
 const url = process.argv[2];
@@ -107,30 +172,11 @@ async function openOneTab(targetUrl) {
 
     var rawHTMLContent = await page.content();
 
-    const cleanHTML = DOMPurify.sanitize(rawHTMLContent, {
-      ADD_TAGS: ["pg-slot"],
-      FORBID_TAGS: ["script"],
-      ALLOWED_ATTR: ["style", "class", "id"],
-      FORBID_ATTR: [
-        "onload",
-        "onerror",
-        "onclick",
-        "onmouseover",
-        "onmouseout",
-        "onmousedown",
-        "onmouseup",
-        "onkeydown",
-        "onkeypress",
-        "onkeyup",
-      ],
-      ALLOW_DATA_ATTR: true,
-      KEEP_CONTENT: true,
-      SANITIZE_DOM: true,
-      WHOLE_DOCUMENT: true,
-      FORCE_BODY: true,
-    });
+    const markdownContent = turndownService.turndown(rawHTMLContent);
 
-    return cleanHTML;
+    return markdownContent;
+
+    // return cleanHTML;
     // return rawHTMLContent;
   } finally {
     await page.close();
