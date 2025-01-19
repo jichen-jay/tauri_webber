@@ -6,6 +6,34 @@ import os from "os";
 import express from "express";
 import fs from "fs";
 
+async function previewMarkdown(markdownContent) {
+  const notebook = await Notebook.init({
+    notebookPath: process.cwd(),
+    config: {
+      previewTheme: "github-light.css",
+      mathRenderingOption: "KaTeX",
+      codeBlockTheme: "github.css",
+      enableScriptExecution: true,
+    },
+  });
+
+  // Create temporary file with .md extension
+  const tempFileName = `temp-${Date.now()}.md`;
+  await fs.promises.writeFile(tempFileName, markdownContent);
+
+  try {
+    const engine = notebook.getNoteMarkdownEngine(tempFileName);
+    const htmlContent = await engine.htmlExport({
+      offline: false,
+      runAllCodeChunks: true,
+    });
+    return htmlContent;
+  } finally {
+    // Clean up temp file
+    await fs.promises.unlink(tempFileName);
+  }
+}
+
 const turndownService = new TurndownService({
   headingStyle: "atx", // Use ATX-style headings (e.g., # Heading)
   bulletListMarker: "-", // Use '-' for unordered lists
@@ -22,20 +50,20 @@ const turndownService = new TurndownService({
 //   },
 // });
 
-turndownService.addRule("boilerplate", {
-  filter: (node) => {
-    const tagName = node.nodeName.toLowerCase();
-    return (
-      tagName === "script" ||
-      tagName === "style" ||
-      tagName === "noscript" ||
-      tagName === "iframe" ||
-      node.textContent.includes("Advertisement") ||
-      node.textContent.includes("cookies")
-    );
-  },
-  replacement: () => "",
-});
+// turndownService.addRule("boilerplate", {
+//   filter: (node) => {
+//     const tagName = node.nodeName.toLowerCase();
+//     return (
+//       tagName === "script" ||
+//       tagName === "style" ||
+//       tagName === "noscript" ||
+//       tagName === "iframe" ||
+//       node.textContent.includes("Advertisement") ||
+//       node.textContent.includes("cookies")
+//     );
+//   },
+//   replacement: () => "",
+// });
 
 turndownService.addRule("deduplicateLinks", {
   filter: "a",
@@ -63,14 +91,14 @@ turndownService.addRule("cleanEmptyBrackets", {
 });
 
 // Add a rule for images to simplify <img> tags into Markdown format
-turndownService.addRule("imageSimplify", {
-  filter: "img",
-  replacement: function (content, node) {
-    const alt = node.getAttribute("alt") || "";
-    const src = node.getAttribute("src") || "";
-    return `${alt}`;
-  },
-});
+// turndownService.addRule("imageSimplify", {
+//   filter: "img",
+//   replacement: function (content, node) {
+//     const alt = node.getAttribute("alt") || "";
+//     const src = node.getAttribute("src") || "";
+//     return `${alt}`;
+//   },
+// });
 
 // Add a rule for links to ensure proper formatting
 turndownService.addRule("linkSimplify", {
@@ -81,25 +109,25 @@ turndownService.addRule("linkSimplify", {
   },
 });
 
-// Add a rule to handle blockquotes properly
-turndownService.addRule("blockquote", {
-  filter: "blockquote",
-  replacement: function (content) {
-    return content
-      .split("\n")
-      .map((line) => `> ${line}`)
-      .join("\n");
-  },
-});
+// // Add a rule to handle blockquotes properly
+// turndownService.addRule("blockquote", {
+//   filter: "blockquote",
+//   replacement: function (content) {
+//     return content
+//       .split("\n")
+//       .map((line) => `> ${line}`)
+//       .join("\n");
+//   },
+// });
 
-// Add a rule for tables if needed
-turndownService.addRule("tableSimplify", {
-  filter: ["table"],
-  replacement: function (content, node) {
-    // Simplify table rendering logic here if necessary.
-    return content; // Placeholder - extend as needed.
-  },
-});
+// // Add a rule for tables if needed
+// turndownService.addRule("tableSimplify", {
+//   filter: ["table"],
+//   replacement: function (content, node) {
+//     // Simplify table rendering logic here if necessary.
+//     return content; // Placeholder - extend as needed.
+//   },
+// });
 
 let browser;
 const url = process.argv[2];
@@ -200,7 +228,7 @@ async function openOneTab(targetUrl) {
 
     console.log("Attempted to remove popups and overlays.");
 
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.evaluate(() => window.scrollTo(0, window.innerHeight));
     await page.waitForTimeout(2000);
     await page.evaluate(() => window.scrollTo(0, 0));
 
@@ -227,22 +255,145 @@ async function openOneTab(targetUrl) {
 
     var rawHTMLContent = await page.content();
 
-    const markdownContent = turndownService.turndown(rawHTMLContent);
     const cleanHTML = DOMPurify.sanitize(rawHTMLContent, {
-      ADD_TAGS: ["pg-slot"],
-      FORBID_TAGS: ["base", "embed", "frame", "iframe", "object", "script"],
-      FORBID_ATTR: ["onload", "onerror", "onclick", "onmouseover"],
+      ADD_TAGS: ["img"],
+      ALLOWED_ATTR: ["src", "alt", "width", "height"],
+      FORBID_TAGS: [
+        "script",
+        "iframe",
+        "frame",
+        "embed",
+        "object",
+        "base",
+        "nav",
+        "header",
+        "footer",
+        "aside",
+        "advertisement",
+        "input",
+      ],
+      FORBID_ATTR: [
+        "onclick",
+        "onload",
+        "onerror",
+        "onmouseover",
+        "onmouseout",
+        "onkeydown",
+        "onkeyup",
+      ],
+      KEEP_CONTENT: true,
+      WHOLE_DOCUMENT: true,
+      SANITIZE_DOM: true,
+      ADD_ATTR: ["target"],
+      FORCE_BODY: true,
+      ALLOW_DATA_ATTR: true,
       CUSTOM_ELEMENT_HANDLING: {
         tagNameCheck: null,
         attributeNameCheck: null,
         allowCustomizedBuiltInElements: true,
       },
-      KEEP_CONTENT: true,
-      ADD_ATTR: ["target"], // Allow target attribute for links
-      FORCE_BODY: true, // Ensure a <body> tag is present
-      WHOLE_DOCUMENT: true, // Clean the whole document
-      SANITIZE_DOM: true, // Clean DOM nodes
+      HOOKS: {
+        uponSanitizeElement: (node, data) => {
+          if (data.tagName === "img") {
+            const nonContentSelectors = [
+              // Navigation and Header Elements
+              "header",
+              "nav",
+              "navbar",
+              ".navigation",
+              ".nav-menu",
+              ".top-bar",
+
+              // Sidebar Elements
+              "aside",
+              ".sidebar",
+              ".side-menu",
+              ".widget",
+              ".complementary",
+              '[role="complementary"]',
+              ".right-rail",
+              ".left-rail",
+
+              // Advertisement Areas
+              ".ad",
+              ".advertisement",
+              ".banner",
+              ".sponsored",
+              ".promoted",
+              "[data-ad]",
+              "[class*='ad-']",
+              "[id*='ad-']",
+              ".dfp",
+              ".commercial",
+
+              // Footer Elements
+              "footer",
+              ".footer",
+              ".bottom-bar",
+              ".site-info",
+
+              // Social Media Elements
+              ".social",
+              ".share",
+              ".follow",
+              ".social-media",
+              ".social-links",
+
+              // Related Content
+              ".related",
+              ".recommended",
+              ".suggestions",
+              ".more-stories",
+
+              // Comments and User Interaction
+              ".comments",
+              ".discussion",
+              ".user-content",
+              ".reactions",
+
+              // Promotional Areas
+              ".promo",
+              ".promotion",
+              ".marketing",
+              ".newsletter",
+              ".subscribe",
+
+              // Utility Areas
+              ".toolbar",
+              ".tools",
+              ".utility-bar",
+              ".meta",
+              ".tags",
+
+              // Pop-ups and Overlays
+              ".modal",
+              ".popup",
+              ".overlay",
+              ".dialog",
+              "[role='dialog']",
+
+              // Other Common Non-Content Areas
+              ".auxiliary",
+              ".supplementary",
+              ".secondary",
+              ".tertiary",
+              "[data-component='sidebar']",
+              "[data-region='sidebar']",
+            ];
+
+            const isInNonContentArea = nonContentSelectors.some((selector) => {
+              return node.closest(selector) !== null;
+            });
+
+            if (isInNonContentArea) {
+              return node.remove();
+            }
+          }
+        },
+      },
     });
+
+    // const markdownContent = turndownService.turndown(cleanHTML);
 
     // return markdownContent;
 
@@ -266,12 +417,21 @@ async function openOneTab(targetUrl) {
       return res.status(400).send('Error: Missing "url" query parameter.');
     }
 
+    // try {
+    //   const result = await openOneTab(targetUrl); // Open the tab and get the content
+    //   res.send(result); // Send back the scraped content as response
+    // } catch (error) {
+    //   console.error(error);
+    //   res.status(500).send("Error scraping the webpage.");
+    // }
+
     try {
-      const result = await openOneTab(targetUrl); // Open the tab and get the content
-      res.send(result); // Send back the scraped content as response
+      const returnedContent = await openOneTab(targetUrl);
+      // const htmlPreview = await previewMarkdown(markdownContent);
+      res.send(returnedContent);
     } catch (error) {
       console.error(error);
-      res.status(500).send("Error scraping the webpage.");
+      res.status(500).send("Error processing the webpage.");
     }
   });
 

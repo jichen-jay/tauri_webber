@@ -19,3 +19,5 @@ docker run -p 0.0.0.0:4333:4333 browsh/browsh browsh --http-server-mode
 
 docker run -it browsh/browsh browsh --startup-url https://example.com
 
+nix dash init
+
