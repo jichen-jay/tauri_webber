@@ -131,14 +131,13 @@ async function initializeBrowser() {
         `--user-agent=${mobile_user_agent}`,
         "--window-size=1080,1920",
         "--force-device-scale-factor=1",
-        
       ],
       ignoreDefaultArgs: ["--enable-automation"],
       ignoreHTTPSErrors: true,
     });
     await browser.addInitScript(() => {
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => undefined
+      Object.defineProperty(navigator, "webdriver", {
+        get: () => undefined,
       });
     });
 
@@ -229,11 +228,26 @@ async function openOneTab(targetUrl) {
     var rawHTMLContent = await page.content();
 
     const markdownContent = turndownService.turndown(rawHTMLContent);
+    const cleanHTML = DOMPurify.sanitize(rawHTMLContent, {
+      ADD_TAGS: ["pg-slot"],
+      FORBID_TAGS: ["base", "embed", "frame", "iframe", "object", "script"],
+      FORBID_ATTR: ["onload", "onerror", "onclick", "onmouseover"],
+      CUSTOM_ELEMENT_HANDLING: {
+        tagNameCheck: null,
+        attributeNameCheck: null,
+        allowCustomizedBuiltInElements: true,
+      },
+      KEEP_CONTENT: true,
+      ADD_ATTR: ["target"], // Allow target attribute for links
+      FORCE_BODY: true, // Ensure a <body> tag is present
+      WHOLE_DOCUMENT: true, // Clean the whole document
+      SANITIZE_DOM: true, // Clean DOM nodes
+    });
 
     // return markdownContent;
 
-    // return cleanHTML;
-    return rawHTMLContent;
+    return cleanHTML;
+    // return rawHTMLContent;
   } finally {
     await page.close();
   }
@@ -267,7 +281,7 @@ async function openOneTab(targetUrl) {
 
   process.on("SIGINT", async () => {
     console.log("\nClosing browser...");
-    await browser.close();
-    process.exit(0);
+    // await browser.close();
+    // process.exit(0);
   });
 })();
