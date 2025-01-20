@@ -292,110 +292,171 @@ async function openOneTab(targetUrl) {
         attributeNameCheck: null,
         allowCustomizedBuiltInElements: true,
       },
+
       HOOKS: {
         uponSanitizeElement: (node, data) => {
-          if (data.tagName === "img") {
-            const nonContentSelectors = [
-              // Navigation and Header Elements
-              "header",
-              "nav",
-              "navbar",
-              ".navigation",
-              ".nav-menu",
-              ".top-bar",
+          const nonContentSelectors = [
+            // Navigation and Header Elements
+            "header",
+            "nav",
+            "navbar",
+            ".navigation",
+            ".nav-menu",
+            ".top-bar",
 
-              // Sidebar Elements
-              "aside",
-              ".sidebar",
-              ".side-menu",
-              ".widget",
-              ".complementary",
-              '[role="complementary"]',
-              ".right-rail",
-              ".left-rail",
+            // Sidebar Elements
+            "aside",
+            ".sidebar",
+            ".side-menu",
+            ".widget",
+            ".complementary",
+            '[role="complementary"]',
+            ".right-rail",
+            ".left-rail",
 
-              // Advertisement Areas
-              ".ad",
-              ".advertisement",
-              ".banner",
-              ".sponsored",
-              ".promoted",
-              "[data-ad]",
-              "[class*='ad-']",
-              "[id*='ad-']",
-              ".dfp",
-              ".commercial",
+            // Advertisement Areas
+            ".ad",
+            ".advertisement",
+            ".banner",
+            ".sponsored",
+            ".promoted",
+            "[data-ad]",
+            "[class*='ad-']",
+            "[id*='ad-']",
+            ".dfp",
+            ".commercial",
 
-              // Footer Elements
-              "footer",
-              ".footer",
-              ".bottom-bar",
-              ".site-info",
+            // Footer Elements
+            "footer",
+            ".footer",
+            ".bottom-bar",
+            ".site-info",
 
-              // Social Media Elements
-              ".social",
-              ".share",
-              ".follow",
-              ".social-media",
-              ".social-links",
+            // Social Media Elements
+            ".social",
+            ".share",
+            ".follow",
+            ".social-media",
+            ".social-links",
 
-              // Related Content
-              ".related",
-              ".recommended",
-              ".suggestions",
-              ".more-stories",
+            // Related Content
+            ".related",
+            ".recommended",
+            ".suggestions",
+            ".more-stories",
 
-              // Comments and User Interaction
-              ".comments",
-              ".discussion",
-              ".user-content",
-              ".reactions",
+            // Comments and User Interaction
+            ".comments",
+            ".discussion",
+            ".user-content",
+            ".reactions",
 
-              // Promotional Areas
-              ".promo",
-              ".promotion",
-              ".marketing",
-              ".newsletter",
-              ".subscribe",
+            // Promotional Areas
+            ".promo",
+            ".promotion",
+            ".marketing",
+            ".newsletter",
+            ".subscribe",
 
-              // Utility Areas
-              ".toolbar",
-              ".tools",
-              ".utility-bar",
-              ".meta",
-              ".tags",
+            // Utility Areas
+            ".toolbar",
+            ".tools",
+            ".utility-bar",
+            ".meta",
+            ".tags",
 
-              // Pop-ups and Overlays
-              ".modal",
-              ".popup",
-              ".overlay",
-              ".dialog",
-              "[role='dialog']",
+            // Pop-ups and Overlays
+            ".modal",
+            ".popup",
+            ".overlay",
+            ".dialog",
+            "[role='dialog']",
 
-              // Other Common Non-Content Areas
-              ".auxiliary",
-              ".supplementary",
-              ".secondary",
-              ".tertiary",
-              "[data-component='sidebar']",
-              "[data-region='sidebar']",
+            // Other Common Non-Content Areas
+            ".auxiliary",
+            ".supplementary",
+            ".secondary",
+            ".tertiary",
+            "[data-component='sidebar']",
+            "[data-region='sidebar']",
+          ];
+
+          // Check if element is in non-content area
+          const isInNonContentArea = nonContentSelectors.some(
+            (selector) => node.closest(selector) !== null
+          );
+
+          // Remove SVGs and their containers
+          if (
+            data.tagName === "svg" ||
+            data.tagName === "img" ||
+            data.tagName === "picture" ||
+            data.tagName === "figure" ||
+            data.tagName === "source"
+          ) {
+            const isLogo = (element) => {
+              const logoIndicators = [
+                "logo",
+                "brand",
+                "icon",
+                "avatar",
+                "badge",
+                "emblem",
+                "symbol",
+              ];
+
+              return (
+                (element.className &&
+                  logoIndicators.some((term) =>
+                    element.className.toLowerCase().includes(term)
+                  )) ||
+                (element.src &&
+                  logoIndicators.some((term) =>
+                    element.src.toLowerCase().includes(term)
+                  )) ||
+                (element.alt &&
+                  logoIndicators.some((term) =>
+                    element.alt.toLowerCase().includes(term)
+                  ))
+              );
+            };
+
+            if (isLogo(node) || isInNonContentArea) {
+              node.remove();
+            }
+          }
+
+          // Remove containers that typically hold logos
+          if (data.tagName === "div" || data.tagName === "span") {
+            const logoContainerIndicators = [
+              "logo",
+              "brand",
+              "publisher",
+              "masthead",
+              "site-header",
+              "header-image",
             ];
 
-            const isInNonContentArea = nonContentSelectors.some((selector) => {
-              return node.closest(selector) !== null;
-            });
+            const hasLogoClass = logoContainerIndicators.some(
+              (term) =>
+                node.className && node.className.toLowerCase().includes(term)
+            );
 
-            if (isInNonContentArea) {
-              return node.remove();
+            if (hasLogoClass) {
+              node.remove();
             }
+          }
+
+          // Remove all srcset attributes to prevent lazy loading
+          if (data.tagName === "img") {
+            node.removeAttribute("srcset");
+            node.removeAttribute("data-src");
+            node.removeAttribute("data-srcset");
+            node.removeAttribute("loading");
           }
         },
       },
     });
-
-    // const markdownContent = turndownService.turndown(cleanHTML);
-
-    // return markdownContent;
 
     return cleanHTML;
     // return rawHTMLContent;
