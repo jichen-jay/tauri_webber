@@ -255,9 +255,21 @@ async function openOneTab(targetUrl) {
 
     var rawHTMLContent = await page.content();
 
-    const cleanHTML = DOMPurify.sanitize(rawHTMLContent, {
-      ADD_TAGS: ["img"],
-      ALLOWED_ATTR: ["src", "alt", "width", "height"],
+    var cleanHTML = DOMPurify.sanitize(rawHTMLContent, {
+      ADD_TAGS: [
+        "img",
+        "article",
+        "section",
+        "p",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "details",
+        "summary",
+      ],
       FORBID_TAGS: [
         "script",
         "iframe",
@@ -271,6 +283,30 @@ async function openOneTab(targetUrl) {
         "aside",
         "advertisement",
         "input",
+        "style",
+        "svg",
+        "symbol",
+        "use",
+        "path",
+        "g",
+        "defs",
+        "small",
+        "menu",
+        "figure",
+        "figcaption",
+        "picture",
+        "source",
+      ],
+      ALLOWED_ATTR: [
+        "src",
+        "alt",
+        "width",
+        "height",
+        "class",
+        "id",
+        "open",
+        "aria-expanded",
+        "aria-label",
       ],
       FORBID_ATTR: [
         "onclick",
@@ -280,179 +316,122 @@ async function openOneTab(targetUrl) {
         "onmouseout",
         "onkeydown",
         "onkeyup",
+        "srcset",
+        "data-src",
+        "data-srcset",
+        "loading",
+        "role",
       ],
       KEEP_CONTENT: true,
       WHOLE_DOCUMENT: true,
       SANITIZE_DOM: true,
-      ADD_ATTR: ["target"],
-      FORCE_BODY: true,
-      ALLOW_DATA_ATTR: true,
-      CUSTOM_ELEMENT_HANDLING: {
-        tagNameCheck: null,
-        attributeNameCheck: null,
-        allowCustomizedBuiltInElements: true,
-      },
-
+      ALLOW_DATA_ATTR: false,
       HOOKS: {
         uponSanitizeElement: (node, data) => {
-          const nonContentSelectors = [
-            // Navigation and Header Elements
-            "header",
-            "nav",
-            "navbar",
-            ".navigation",
-            ".nav-menu",
-            ".top-bar",
-
-            // Sidebar Elements
-            "aside",
-            ".sidebar",
-            ".side-menu",
-            ".widget",
-            ".complementary",
-            '[role="complementary"]',
-            ".right-rail",
-            ".left-rail",
-
-            // Advertisement Areas
-            ".ad",
-            ".advertisement",
-            ".banner",
-            ".sponsored",
-            ".promoted",
-            "[data-ad]",
-            "[class*='ad-']",
-            "[id*='ad-']",
-            ".dfp",
-            ".commercial",
-
-            // Footer Elements
-            "footer",
-            ".footer",
-            ".bottom-bar",
-            ".site-info",
-
-            // Social Media Elements
-            ".social",
-            ".share",
-            ".follow",
-            ".social-media",
-            ".social-links",
-
-            // Related Content
-            ".related",
-            ".recommended",
-            ".suggestions",
-            ".more-stories",
-
-            // Comments and User Interaction
-            ".comments",
-            ".discussion",
-            ".user-content",
-            ".reactions",
-
-            // Promotional Areas
-            ".promo",
-            ".promotion",
-            ".marketing",
-            ".newsletter",
-            ".subscribe",
-
-            // Utility Areas
-            ".toolbar",
-            ".tools",
-            ".utility-bar",
-            ".meta",
-            ".tags",
-
-            // Pop-ups and Overlays
-            ".modal",
-            ".popup",
-            ".overlay",
-            ".dialog",
-            "[role='dialog']",
-
-            // Other Common Non-Content Areas
-            ".auxiliary",
-            ".supplementary",
-            ".secondary",
-            ".tertiary",
-            "[data-component='sidebar']",
-            "[data-region='sidebar']",
-          ];
-
-          // Check if element is in non-content area
-          const isInNonContentArea = nonContentSelectors.some(
-            (selector) => node.closest(selector) !== null
-          );
-
-          // Remove SVGs and their containers
-          if (
-            data.tagName === "svg" ||
-            data.tagName === "img" ||
-            data.tagName === "picture" ||
-            data.tagName === "figure" ||
-            data.tagName === "source"
-          ) {
-            const isLogo = (element) => {
-              const logoIndicators = [
-                "logo",
-                "brand",
-                "icon",
-                "avatar",
-                "badge",
-                "emblem",
-                "symbol",
-              ];
-
-              return (
-                (element.className &&
-                  logoIndicators.some((term) =>
-                    element.className.toLowerCase().includes(term)
-                  )) ||
-                (element.src &&
-                  logoIndicators.some((term) =>
-                    element.src.toLowerCase().includes(term)
-                  )) ||
-                (element.alt &&
-                  logoIndicators.some((term) =>
-                    element.alt.toLowerCase().includes(term)
-                  ))
-              );
-            };
-
-            if (isLogo(node) || isInNonContentArea) {
-              node.remove();
-            }
-          }
-
-          // Remove containers that typically hold logos
-          if (data.tagName === "div" || data.tagName === "span") {
-            const logoContainerIndicators = [
-              "logo",
-              "brand",
-              "publisher",
-              "masthead",
-              "site-header",
-              "header-image",
-            ];
-
-            const hasLogoClass = logoContainerIndicators.some(
-              (term) =>
-                node.className && node.className.toLowerCase().includes(term)
-            );
-
-            if (hasLogoClass) {
-              node.remove();
-            }
-          }
-
-          // Remove all srcset attributes to prevent lazy loading
           if (data.tagName === "img") {
-            node.removeAttribute("srcset");
-            node.removeAttribute("data-src");
-            node.removeAttribute("data-srcset");
-            node.removeAttribute("loading");
+            const parent = node.parentElement;
+            const isInContentArea =
+              parent &&
+              (parent.tagName === "ARTICLE" ||
+                parent.tagName === "P" ||
+                parent.matches('[class*="content"]'));
+
+            if (
+              !isInContentArea ||
+              node.src.toLowerCase().includes("logo") ||
+              node.src.toLowerCase().includes("icon") ||
+              node.alt.toLowerCase().includes("logo") ||
+              node.className.toLowerCase().includes("logo") ||
+              node.width < 100 || // Increase minimum width
+              node.height < 100 || // Add minimum height
+              parent.className.toLowerCase().includes("header") ||
+              parent.className.toLowerCase().includes("nav") ||
+              parent.className.toLowerCase().includes("menu") ||
+              parent.id.toLowerCase().includes("header") ||
+              parent.id.toLowerCase().includes("logo")
+            ) {
+              node.remove();
+              return;
+            }
+          }
+
+          if (
+            node.matches &&
+            node.matches(
+              [
+                '[class*="site-title"]',
+                '[class*="site-description"]',
+                '[class*="branding"]',
+                '[class*="logo-wrap"]',
+                '[class*="header-image"]',
+                '[class*="site-header-image"]',
+                '[id*="logo"]',
+                '[id*="header"]',
+                '[id*="branding"]',
+              ].join(",")
+            )
+          ) {
+            node.remove();
+            return;
+          }
+
+          if (
+            node.matches &&
+            node.matches(
+              [
+                "details:not([open])",
+                ".collapse:not(.show)",
+                '[aria-expanded="false"]',
+                ".HeaderMenu-dropdown",
+                ".js-header-menu",
+                '[style*="display: none"]',
+                '[style*="visibility: hidden"]',
+                '[class*="hidden"]',
+                '[class*="collapsed"]',
+                ".js-responsive-underlinenav-overflow",
+              ].join(",")
+            )
+          ) {
+            node.remove();
+            return;
+          }
+
+          function isHidden(element) {
+            const style = window.getComputedStyle(element);
+            return (
+              style.display === "none" ||
+              style.visibility === "hidden" ||
+              parseFloat(style.opacity) === 0
+            );
+          }
+
+          // Add this to your HOOKS.uponSanitizeElement function
+          if (node.nodeType === Node.ELEMENT_NODE && isHidden(node)) {
+            node.remove();
+            return;
+          }
+
+          if (
+            node.matches &&
+            node.matches(
+              '[class*="submenu"], [class*="dropdown"], [class*="child"]'
+            )
+          ) {
+            const parentMenu = node.closest('[class*="menu"], [class*="nav"]');
+            if (parentMenu && !parentMenu.classList.contains("active")) {
+              node.remove();
+              return;
+            }
+          }
+
+          // Remove empty containers
+          if (
+            node.children &&
+            node.children.length === 0 &&
+            !node.textContent.trim() &&
+            node.tagName !== "IMG"
+          ) {
+            node.remove();
           }
         },
       },
@@ -488,7 +467,8 @@ async function openOneTab(targetUrl) {
 
     try {
       const returnedContent = await openOneTab(targetUrl);
-      // const htmlPreview = await previewMarkdown(markdownContent);
+      // const cleanMd = await turndownService.turndown(returnedContent);
+      // res.send(cleanMd);
       res.send(returnedContent);
     } catch (error) {
       console.error(error);
